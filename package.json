@@ -1,0 +1,40 @@
+{
+  "name": "webauthn",
+  "version": "0.0.1",
+  "description": "A configurable express middleware for handling serverside authentication using Webauthn",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/strangerlabs/webauthn.git"
+  },
+  "keywords": [
+    "webauthn",
+    "authentication"
+  ],
+  "author": "Stranger Labs, Inc.",
+  "contributors": [
+    {
+      "name": "Alex Pfeiffer",
+      "email": "alex@strangerlabs.io",
+      "url": "https://github.com/Terrahop"
+    },
+    {
+      "name": "Greg Linklater",
+      "email": "greg@strangerlabs.io",
+      "url": "https://github.com/EternalDeiwos"
+    },
+    {
+      "name": "Christian Smith",
+      "email": "christian@strangerlabs.io",
+      "url": "https://github.com/christiansmith"
+    }
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://gitlab.com/strangerlabs/webauthn/issues"
+  },
+  "homepage": "https://gitlab.com/strangerlabs/webauthn#readme"
+}
