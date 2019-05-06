@@ -133,10 +133,13 @@ class Client {
   async register (data = {}) {
     try {
       const challenge = await this.getMakeCredentialsChallenge(data)
-      const publicKey = Client.preformatMakeCredReq(challenge)
-      const credential = await navigator.credentials.create({ publicKey })
+      console.log('REGISTER CHALLENGE', challenge)
 
-      console.log('CREDENTIAL', credential)
+      const publicKey = Client.preformatMakeCredReq(challenge)
+      console.log('REGISTER PUBLIC KEY', publicKey)
+
+      const credential = await navigator.credentials.create({ publicKey })
+      console.log('REGISTER CREDENTIAL', credential)
 
       const credentialResponse = Client.publicKeyCredentialToJSON(credential)
       return await this.sendWebAuthnResponse(credentialResponse)
@@ -149,10 +152,13 @@ class Client {
   async login (data = {}) {
     try {
       const challenge = await this.getGetAssertionChallenge(data)
-      const publicKey = Client.preformatGetAssertReq(challenge)
-      const credential = await navigator.credentials.get({ publicKey })
+      console.log('LOGIN CHALLENGE', challenge)
 
-      console.log('CREDENTIAL', credential)
+      const publicKey = Client.preformatGetAssertReq(challenge)
+      console.log('LOGIN PUBLIC KEY', publicKey)
+
+      const credential = await navigator.credentials.get({ publicKey })
+      console.log('LOGIN CREDENTIAL', credential)
 
       const credentialResponse = Client.publicKeyCredentialToJSON(credential)
       return await this.sendWebAuthnResponse(credentialResponse)
