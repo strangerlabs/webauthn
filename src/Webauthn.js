@@ -15,7 +15,7 @@ const { Certificate } = require('@fidm/x509')
  * Module Dependencies
  * @ignore
  */
-const BasicModel = require('./BasicModel')
+const MemoryAdapter = require('./MemoryAdapter')
 
 /**
  * Webauthn RP
@@ -27,6 +27,7 @@ class Webauthn {
       origin: 'http://localhost:3000',
       usernameField: 'name',
       userFields: ['name', 'displayName'],
+      store: new MemoryAdapter(),
       rpName: 'ACME Corporation',
     }, options)
 
@@ -39,8 +40,10 @@ class Webauthn {
           return state
         }, {})
     }
+  }
 
-    this.model = this.config.model || new BasicModel()
+  get store () {
+    return this.config.store
   }
 
   initialize () {
@@ -84,7 +87,8 @@ class Webauthn {
         user[dbKey] = req.body[bodyKey]
       })
 
-      if (await this.model.get(username)) {
+      const existing = await this.store.get(username)
+      if (existing && existing.authenticator) {
         return res.status(403).json({
           'status': 'failed',
           'message': `${usernameField} ${username} already exists`,
@@ -92,7 +96,7 @@ class Webauthn {
       }
 
       console.log('PUT', user)
-      await this.model.put(username, user)
+      await this.store.put(username, user)
 
       console.log('STORED')
 
@@ -121,7 +125,7 @@ class Webauthn {
       }
 
       try {
-        const user = await this.model.get(username)
+        const user = await this.store.get(username)
 
         if (!user) {
           return res.status(401).json({ message: 'user does not exist' })
@@ -180,7 +184,8 @@ class Webauthn {
 
       let clientData
       try {
-        clientData = JSON.parse(base64url.decode(response.clientDataJSON))
+        const json = base64url.decode(response.clientDataJSON)
+        clientData = JSON.parse(json)
       } catch (err) {
         return res.status(400).json({ message: 'failed to decode client data' })
       }
@@ -201,23 +206,37 @@ class Webauthn {
       }
 
       let result
-      const user = await this.model.get(username)
+      const user = await this.store.get(username)
 
       console.log('USER', user)
 
-      if (response.attestationObject !== undefined) {
-        result = Webauthn.verifyAuthenticatorAttestationResponse(req.body)
+      try {
+        if (response.attestationObject !== undefined) {
+          result = Webauthn.verifyAuthenticatorAttestationResponse(response)
 
-        if (result.verified) {
-          user.authenticator = result.authrInfo
-          await this.model.put(username, user)
+          if (result.verified) {
+            user.authenticator = result.authrInfo
+            await this.store.put(username, user)
+          }
+
+        } else if (response.authenticatorData !== undefined) {
+          result = Webauthn.verifyAuthenticatorAssertionResponse(response, user.authenticator)
+
+          if (result.verified) {
+            if (result.counter <= user.authenticator.counter)
+              throw new Error('Authr counter did not increase!')
+
+            user.authenticator.counter = result.counter
+            await this.store.put(username, user)
+          }
+
+        } else {
+          return res.status(401).json({ status: 'failed', message: 'failed to determine response type' })
         }
 
-      } else if (response.authenticatorData !== undefined) {
-        result = Webauthn.verifyAuthenticatorAssertionResponse(req.body, user.authenticator)
-
-      } else {
-        return res.status(401).json({ status: 'failed', message: 'failed to determine response type' })
+      } catch (err) {
+        console.error(err)
+        return res.status(401).json({ status: 'failed', message: 'failed to authenticate' })
       }
 
       if (result.verified) {
@@ -225,7 +244,7 @@ class Webauthn {
         return res.status(200).json({ status: 'ok' })
 
       } else {
-        return res.status(401).json({ status: 'failed', message: 'failed to authenticate' })
+        return res.status(401).json({ status: 'failed', message: 'verification failed' })
       }
     }
   }
@@ -269,7 +288,7 @@ class Webauthn {
         }
 
         // Lookup user
-        const user = await this.model.get(username)
+        const user = await this.store.get(username)
 
         // User doesn't exist
         if (!user) {
@@ -324,24 +343,27 @@ class Webauthn {
         {
           type: 'public-key',
           id: user.authenticator.credID,
-          transports: ['usb', 'nfc', 'ble'],
+          transports: ['usb', 'nfc', 'ble', 'internal'],
         },
       ],
     }
   }
 
   static verifyAuthenticatorAttestationResponse (webauthnResponse) {
-    const attestationBuffer = base64url.toBuffer(webauthnResponse.response.attestationObject);
+    const attestationBuffer = base64url.toBuffer(webauthnResponse.attestationObject);
     const ctapMakeCredResp = cbor.decodeAllSync(attestationBuffer)[0];
+
+    console.log('CTAP_RESPONSE', ctapMakeCredResp)
+
+    const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
+    console.log('AUTHR_DATA_STRUCT', authrDataStruct)
 
     const response = { 'verified': false };
     if (ctapMakeCredResp.fmt === 'fido-u2f') {
-      const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
-
       if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
         throw new Error('User was NOT presented durring authentication!');
 
-      const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.response.clientDataJSON))
+      const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
       const reservedByte = Buffer.from([0x00]);
       const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
       const signatureBase = Buffer.concat([reservedByte, authrDataStruct.rpIdHash, clientDataHash, authrDataStruct.credID, publicKey]);
@@ -359,13 +381,12 @@ class Webauthn {
           credID: base64url.encode(authrDataStruct.credID)
         }
       }
-    } else if (ctapMakeCredResp.fmt === 'packed' && ctapMakeCredResp.attStmt.hasOwnProperty('x5c')) {
-      const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
 
+    } else if (ctapMakeCredResp.fmt === 'packed' && ctapMakeCredResp.attStmt.hasOwnProperty('x5c')) {
       if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
         throw new Error('User was NOT presented durring authentication!');
 
-      const clientDataHash = hash(base64url.toBuffer(webauthnResponse.response.clientDataJSON))
+      const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
       const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
       const signatureBase = Buffer.concat([ctapMakeCredResp.authData, clientDataHash]);
 
@@ -408,13 +429,39 @@ class Webauthn {
           credID: base64url.encode(authrDataStruct.credID)
         }
       }
+
+      // Self signed
+    } else if (ctapMakeCredResp.fmt === 'packed') {
+      if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
+        throw new Error('User was NOT presented durring authentication!');
+
+      const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
+      const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
+      const signatureBase = Buffer.concat([ctapMakeCredResp.authData, clientDataHash]);
+      const PEMCertificate = Webauthn.ASN1toPEM(publicKey);
+
+      const { attStmt: { sig: signature, alg } } = ctapMakeCredResp
+
+      response.verified = // Verify that sig is a valid signature over the concatenation of authenticatorData
+        // and clientDataHash using the attestation public key in attestnCert with the algorithm specified in alg.
+        Webauthn.verifySignature(signature, signatureBase, PEMCertificate) && alg === -7
+
+      if (response.verified) {
+        response.authrInfo = {
+          fmt: 'fido-u2f',
+          publicKey: base64url.encode(publicKey),
+          counter: authrDataStruct.counter,
+          credID: base64url.encode(authrDataStruct.credID)
+        }
+      }
+
     } else if (ctapMakeCredResp.fmt === 'android-safetynet') {
       console.log("Android safetynet request\n")
       console.log(ctapMakeCredResp)
 
       const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
       console.log('AUTH_DATA', authrDataStruct)
-      console.log('CLIENT_DATA_JSON ', base64url.decode(webauthnResponse.response.clientDataJSON))
+      console.log('CLIENT_DATA_JSON ', base64url.decode(webauthnResponse.clientDataJSON))
 
       const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
 
@@ -444,7 +491,7 @@ class Webauthn {
 
       if (response.verified) {
         response.authrInfo = {
-          fmt: 'android-safetynet',
+          fmt: 'fido-u2f',
           publicKey: base64url.encode(publicKey),
           counter: authrDataStruct.counter,
           credID: base64url.encode(authrDataStruct.credID)
@@ -453,36 +500,33 @@ class Webauthn {
 
       console.log('RESPONSE', response)
     } else {
-      throw new Error('Unsupported attestation format! ' + ctapMakeCredResp.fmt);
+      throw new Error(`Unsupported attestation format: ${ctapMakeCredResp.fmt}`);
     }
 
     return response
   }
 
   static verifyAuthenticatorAssertionResponse (webauthnResponse, authr) {
-    const authenticatorData = base64url.toBuffer(webauthnResponse.response.authenticatorData)
+    const authenticatorData = base64url.toBuffer(webauthnResponse.authenticatorData)
 
     const response = { 'verified': false }
-    if (authr.fmt === 'fido-u2f' || authr.fmt === 'android-safetynet') {
+    if (['fido-u2f'].includes(authr.fmt)) {
       const authrDataStruct = Webauthn.parseGetAssertAuthData(authenticatorData)
+      console.log('AUTH_DATA', authrDataStruct)
 
-      if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
+      if (!(authrDataStruct.flags & 0x01)) {// U2F_USER_PRESENTED
         throw new Error('User was not presented durring authentication!')
+      }
 
-      const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.response.clientDataJSON))
+      const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
       const signatureBase = Buffer.concat([authrDataStruct.rpIdHash, authrDataStruct.flagsBuf, authrDataStruct.counterBuf, clientDataHash])
 
       const publicKey = Webauthn.ASN1toPEM(base64url.toBuffer(authr.publicKey))
-      const signature = base64url.toBuffer(webauthnResponse.response.signature)
+      const signature = base64url.toBuffer(webauthnResponse.signature)
 
+      response.counter = authrDataStruct.counter
       response.verified = Webauthn.verifySignature(signature, signatureBase, publicKey)
 
-      if (response.verified) {
-        if (response.counter <= authr.counter)
-          throw new Error('Authr counter did not increase!')
-
-        authr.counter = authrDataStruct.counter
-      }
     }
 
     return response
