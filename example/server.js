@@ -14,6 +14,7 @@ const Webauthn = require('webauthn')
  * Module Dependencies
  * @ignore
  */
+const LevelAdapter = require('webauthn/src/LevelAdapter')
 
 /**
  * Example
@@ -40,12 +41,20 @@ app.use(bodyParser.json())
 
 // Create webauthn
 const webauthn = new Webauthn({
-  origin: 'https://stranger-webauthn.ngrok.io',
+  origin: 'https://webauthn.ngrok.io',
   usernameField: 'username',
   userFields: {
     username: 'username',
     name: 'displayName',
   },
+  store: new LevelAdapter(),
+  // OR
+  // store: {
+  //   put: async (id, value) => {/* return <void> */},
+  //   get: async (id) => {/* return User */},
+  //   search: async (search) => {/* return { [username]: User } */},
+  //   delete: async (id) => {/* return boolean */},
+  // },
   rpName: 'Stranger Labs, Inc.',
 })
 
@@ -58,13 +67,8 @@ app.get('/secret', webauthn.authenticate(/*{ failureRedirect: '/' }*/), (req, re
 })
 
 // Debug
-app.get('/db', (req, res) => {
-  const data = {}
-
-  webauthn.model.db.createReadStream()
-    .on('data', item => data[item.key] = item.value)
-    .on('end', () => res.status(200).json(data))
-    .on('error', () => res.status(500).json({ status: 'failed' }))
+app.get('/db', async (req, res) => {
+  res.status(200).json(await webauthn.store.search())
 })
 
 // Debug
