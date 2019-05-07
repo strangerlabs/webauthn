@@ -24,6 +24,10 @@ class Client {
   }
 
   static publicKeyCredentialToJSON (pubKeyCred) {
+    if (ArrayBuffer.isView(pubKeyCred)) {
+      return Client.publicKeyCredentialToJSON(pubKeyCred.buffer)
+    }
+
     if (pubKeyCred instanceof Array) {
       const arr = []
 
@@ -142,6 +146,8 @@ class Client {
       console.log('REGISTER CREDENTIAL', credential)
 
       const credentialResponse = Client.publicKeyCredentialToJSON(credential)
+      console.log('REGISTER RESPONSE', credentialResponse)
+
       return await this.sendWebAuthnResponse(credentialResponse)
 
     } catch (err) {
@@ -161,6 +167,8 @@ class Client {
       console.log('LOGIN CREDENTIAL', credential)
 
       const credentialResponse = Client.publicKeyCredentialToJSON(credential)
+      console.log('LOGIN RESPONSE', credentialResponse)
+
       return await this.sendWebAuthnResponse(credentialResponse)
 
     } catch (err) {
