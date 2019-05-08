@@ -12,7 +12,7 @@ WebAuthn is a [W3C standard][w3c] that enables web developers to replace passwor
 
 ## Table of Contents
 
-- [Webauthn](#webauthn)
+- [WebAuthn](#webauthn)
   - [Table of Contents](#table-of-contents)
   - [Security](#security)
   - [Install](#install)
@@ -40,14 +40,14 @@ $ npm install webauthn
 See [examples](./examples) for a complete example. The package currently works on its own and we plan to support Passport.js integration in future releases.
 
 ```javascript
-const Webauthn = require('webauthn')
+const WebAuthn = require('webauthn')
 
 // configure express and session middleware; see "examples" in this repository
 // ...
 
 // Create webauthn
-const webauthn = new Webauthn({
-  origin: 'https://webauthn.ngrok.io',
+const webauthn = new WebAuthn({
+  origin: 'http://localhost:3000',
   usernameField: 'username',
   userFields: {
     username: 'username',
@@ -98,7 +98,7 @@ await client.login({ username: 'AL1C3' })
 
 ### Relying Party
 
-**`new Webauthn(options)`**
+**`new WebAuthn(options)`**
 
 The main entrypoint for creating a new WebAuthn RP instance. `options` is used
 to configure the behaviour of the RP. Available options include:
