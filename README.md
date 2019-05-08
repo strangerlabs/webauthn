@@ -104,7 +104,18 @@ The main entrypoint for creating a new WebAuthn RP instance. `options` is used
 to configure the behaviour of the RP. Available options include:
 
 - `origin` - The origin of the deployed application.
-- `[usernameField = 'username']` - The name of the field
+- `rpName` - The display name of RP. This will be shown in the WebAuthn consent
+interface.
+- `[usernameField = 'name']` - The name of the field that uniquely identifies a
+user.
+- `[userFields = ['name', 'displayName'] ]` - One of:
+  - An array of properties from registration request to be included in the saved
+  user object
+  - An object mapping, where the key is the name of a property from the
+  registration request to be included in the user object and the value is the
+  name of that property on the user object.
+- `[store = MemoryAdapter]` - The storage interface for user objects. Defaults
+to an object in memory (for testing only).
 - `[assertionEndpoint = '/login']` - the path of the challenge assertion
 endpoint.
 - `[challengeEndpoint = '/response']` - the path of the challenge response
@@ -124,6 +135,34 @@ not authenticated. Available options include:
 
 - `[failureRedirect]` - If the user fails to authenticate then they will be
 redirected to the supplied URL.
+
+### Storage Adapater
+
+Storage adapters provide an interface to the WebAuthn RP to store and retrieve
+data necessary for authentication, such as authenticator public keys. Storage
+adapters must implement the following interface:
+
+**`async get (id)`**
+
+Retrieves and returns the previously stored object with the provided `id`.
+
+**`async put (id, value)`**
+
+Stores an object so that it may be retrieved with the provided `id`. Returns
+nothing.
+
+**`async search (startsWith, [options])`**
+
+Returns a mapping of objects where the `id` of the objects return starts with
+the provided query value. Available options include:
+
+- `limit`: Return the first N results.
+- `reverse`: Return results in reverse lexicographical order. If used in
+conjunction with limit then the _last_ N results are returned.
+
+**`async delete (id)`**
+
+Delete a previously stored object. Returns a boolean indicating success.
 
 ### Browser Client
 
