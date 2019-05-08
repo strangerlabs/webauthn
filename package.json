@@ -1,7 +1,7 @@
 {
   "name": "webauthn",
   "version": "0.0.1",
-  "description": "A configurable express middleware for handling serverside authentication using Webauthn",
+  "description": "W3C Web Authentication API Relying Party for Node.js and Express",
   "main": "src/Webauthn.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
