@@ -42,7 +42,7 @@
   "bugs": {
     "url": "https://gitlab.com/strangerlabs/webauthn/issues"
   },
-  "homepage": "https://webauthn.strangerlabs.io",
+  "homepage": "https://gitlab.com/strangerlabs/webauthn",
   "dependencies": {
     "@fidm/x509": "^1.2.1",
     "base64url": "^3.0.1",
