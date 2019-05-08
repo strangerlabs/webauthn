@@ -12,7 +12,13 @@
   },
   "keywords": [
     "webauthn",
-    "authentication"
+    "authentication",
+    "fido2",
+    "ctap2",
+    "password-replacement",
+    "express",
+    "expressjs",
+    "express-middleware"
   ],
   "author": "Stranger Labs, Inc.",
   "contributors": [
