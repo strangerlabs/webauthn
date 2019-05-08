@@ -1,8 +1,8 @@
-# Webauthn
+# WebAuthn
 
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
-> A configurable express middleware for handling serverside authentication using Webauthn
+> W3C Web Authentication API Relying Party for Node.js and Express
 
 WebAuthn is a [W3C standard][w3c] that enables web developers to replace passwords in their applications with [FIDO authentication][fido2]. This repository implements a NPM package for use in Node.js services. **This package is in active development and not yet ready for production use. You can use it to kick the tires on WebAuthn. Please file issues to ask questions or provide feedback.**
 
@@ -44,7 +44,6 @@ const Webauthn = require('webauthn')
 
 // configure express and session middleware; see "examples" in this repository
 // ...
-
 
 // Create webauthn
 const webauthn = new Webauthn({
