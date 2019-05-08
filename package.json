@@ -1,6 +1,6 @@
 {
   "name": "webauthn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "W3C Web Authentication API Relying Party for Node.js and Express",
   "main": "src/Webauthn.js",
   "scripts": {
