@@ -73,7 +73,110 @@ app.get('/secret', webauthn.authenticate(), (req, res) => {
 })
 ```
 
+Client
+
+```javascript
+import Client from 'webauthn/client'
+
+const client = new Client({ pathPrefix: '/webauthn' })
+
+await client.register({
+  username: 'AL1C3',
+  name: 'Alice',
+})
+
+// ...
+
+await client.login({ username: 'AL1C3' })
+```
+
 ## API
+
+[cred-mgmt-api]: https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API
+[express-js-router]: https://expressjs.com/en/api.html#express.router
+[express-js-middleware]: https://expressjs.com/en/guide/using-middleware.html
+
+### Relying Party
+
+**`new Webauthn(options)`**
+
+The main entrypoint for creating a new WebAuthn RP instance. `options` is used
+to configure the behaviour of the RP. Available options include:
+
+- `origin` - The origin of the deployed application.
+- `[usernameField = 'username']` - The name of the field
+- `[assertionEndpoint = '/login']` - the path of the challenge assertion
+endpoint.
+- `[challengeEndpoint = '/response']` - the path of the challenge response
+endpoint.
+- `[logoutEndpoint = '/logout']` - the path of the logout endpoint.
+
+**`webauthn.initialize()`**
+
+Returns an [Express Router][express-js-router] with the mounted WebAuthn
+endpoints.
+
+**`webauthn.authenticate([options])`**
+
+Returns an [Express Middleware][express-js-middleware] that will set `req.user`
+for subsequent middlewares, or produce a `401 Unauthorized` error if the user is
+not authenticated. Available options include:
+
+- `[failureRedirect]` - If the user fails to authenticate then they will be
+redirected to the supplied URL.
+
+### Browser Client
+
+**`new Client([options])`**
+
+Constructs a new client for handling interaction with the Web Authentication API
+and the server authentication endpoints. Available options include:
+
+- `[pathPrefix = '/webauthn']` - A mounting prefix to all authorization
+endpoints.
+- `[credentialEndpoint = '/register']` - The path of the credential registration
+endpoint.
+- `[assertionEndpoint = '/login']` - The path of the challenge assertion
+endpoint.
+- `[challengeEndpoint = '/response']` - The path of the challenge response
+endpoint.
+- `[logoutEndpoint = '/logout']` - The path of the logout endpoint.
+
+Returns a new client instance.
+
+**`async client.register(data)`**
+
+Completes a start-to-finish registration of a new authenticator at the remote
+service with the following steps:
+
+1. Fetch a register credential challenge from the remote server's
+`credentialEndpoint`.
+2. Prompt the [Credentials Management API][cred-mgmt-api] to generate a new
+local credential.
+   - The Credentials Management API prompts the user for consent.
+   - The challenge is signed using the user-selected method and returned.
+3. The signed challenge is returned to the remote server's `challengeEndpoint`.
+
+Returns the response of the request to the `challengeEndpoint`.
+
+**`async client.login(data)`**
+
+Completes a start-to-finish assertion challenge on a previously registered
+remote service with the following steps:
+
+1. Fetch an assertion challenge from the remote server's `assertionEndpoint`.
+2. Prompt the [Credentials Management API][cred-mgmt-api] to get an existing
+local credential and sign the response.
+   - The Credentials Management API prompts the user for consent.
+   - The challenge is signed and returned.
+3. The signed challenge is returned to the remote server's `challengeEndpoint`.
+
+Returns the response of the request to the `challengeEndpoint`.
+
+**`async client.logout()`**
+
+Destroys the current session on the remote server. Returns the result of the
+request to the `logoutEndpoint`.
 
 ## Maintainers
 
