@@ -41,7 +41,7 @@ app.use(bodyParser.json())
 
 // Create webauthn
 const webauthn = new Webauthn({
-  origin: 'https://webauthn.ngrok.io',
+  origin: 'http://localhost:3000',
   usernameField: 'username',
   userFields: {
     username: 'username',
@@ -62,8 +62,8 @@ const webauthn = new Webauthn({
 app.use('/webauthn', webauthn.initialize())
 
 // Endpoint without passport
-app.get('/secret', webauthn.authenticate(/*{ failureRedirect: '/' }*/), (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'Super Secret!' })
+app.get('/secret', webauthn.authenticate(), (req, res) => {
+  res.status(200).json({ status: 'ok', message: `Super secret message for ${req.user.displayName}` })
 })
 
 // Debug
