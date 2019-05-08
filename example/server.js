@@ -55,7 +55,7 @@ const webauthn = new Webauthn({
   //   search: async (search) => {/* return { [username]: User } */},
   //   delete: async (id) => {/* return boolean */},
   // },
-  rpName: 'Stranger Labs, Inc.',
+  // rpName: 'Stranger Labs, Inc.',
 })
 
 // Mount webauthn endpoints
