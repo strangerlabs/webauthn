@@ -37,7 +37,7 @@ $ npm install webauthn
 
 ## Usage
 
-See [examples](./examples) for a complete example. The package currently works on its own and we plan to support Passport.js integration in future releases.
+See [examples](./example) for a complete example. The package currently works on its own and we plan to support Passport.js integration in future releases.
 
 ```javascript
 const WebAuthn = require('webauthn')
