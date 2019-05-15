@@ -47,7 +47,7 @@ const webauthn = new Webauthn({
     username: 'username',
     name: 'displayName',
   },
-  store: new LevelAdapter(),
+  store: new LevelAdapter('db'),
   // OR
   // store: {
   //   put: async (id, value) => {/* return <void> */},
@@ -55,7 +55,7 @@ const webauthn = new Webauthn({
   //   search: async (search) => {/* return { [username]: User } */},
   //   delete: async (id) => {/* return boolean */},
   // },
-  // rpName: 'Stranger Labs, Inc.',
+  rpName: 'Stranger Labs, Inc.',
 })
 
 // Mount webauthn endpoints
