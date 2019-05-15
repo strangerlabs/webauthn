@@ -16,6 +16,8 @@ const { Certificate } = require('@fidm/x509')
  * @ignore
  */
 const MemoryAdapter = require('./MemoryAdapter')
+const AttestationChallengeBuilder = require('./AttestationChallengeBuilder')
+const AssertionChallengeBuilder = require('./AssertionChallengeBuilder')
 
 /**
  * Webauthn RP
@@ -61,11 +63,6 @@ class Webauthn {
   register (options = {}) {
     const usernameField = this.config.usernameField || options.usernameField
 
-    const challengeOptions = {
-      rpName: this.config.rpName || options.rpName,
-      usernameField,
-    }
-
     return async (req, res, next) => {
       if (!req.body) {
         return res.status(400).json({ message: 'bad request' })
@@ -100,7 +97,12 @@ class Webauthn {
 
       console.log('STORED')
 
-      const attestation = Webauthn.generateRegistrationChallenge(challengeOptions, user)
+      const attestation = new AttestationChallengeBuilder(this)
+        .setUserInfo(user)
+        // .setAuthenticator() // Forces TPM
+        .setRelyingPartyInfo({ name: this.config.rpName || options.rpName })
+        .build({ status: 'ok' })
+
       req.session.challenge = attestation.challenge
       req.session[usernameField] = username
 
@@ -131,7 +133,10 @@ class Webauthn {
           return res.status(401).json({ message: 'user does not exist' })
         }
 
-        const assertion = Webauthn.generateAssertionChallenge(user)
+        const assertion = new AssertionChallengeBuilder(this)
+          .addAllowedCredential({ id: user.authenticator.credID })
+          .build({ status: 'ok' })
+
         req.session.challenge = assertion.challenge
         req.session[usernameField] = username
 
@@ -309,45 +314,6 @@ class Webauthn {
    * Helpers
    * @ignore
    */
-
-  static generateRegistrationChallenge (options = {}, user) {
-    const { usernameField, rpName } = options
-    const { id, [usernameField]: name, displayName } = user
-
-    return {
-      challenge: base64url(crypto.randomBytes(32)),
-      status: 'ok',
-      rp: {
-        name: rpName,
-      },
-      user: {
-        id,
-        name,
-        displayName: displayName ? displayName : name,
-      },
-      attestation: 'direct',
-      pubKeyCredParams: [
-        {
-          type: 'public-key',
-          alg: -7,
-        },
-      ],
-    }
-  }
-
-  static generateAssertionChallenge (user) {
-    return {
-      challenge: base64url(crypto.randomBytes(32)),
-      status: 'ok',
-      allowCredentials: [
-        {
-          type: 'public-key',
-          id: user.authenticator.credID,
-          transports: ['usb', 'nfc', 'ble', 'internal'],
-        },
-      ],
-    }
-  }
 
   static verifyAuthenticatorAttestationResponse (webauthnResponse) {
     const attestationBuffer = base64url.toBuffer(webauthnResponse.attestationObject);
