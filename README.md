@@ -18,8 +18,17 @@ WebAuthn is a [W3C standard][w3c] that enables web developers to replace passwor
   - [Install](#install)
   - [Usage](#usage)
   - [API](#api)
+    - [Relying Party](#relying-party)
+    - [Storage Adapater](#storage-adapater)
+    - [Browser Client](#browser-client)
   - [Maintainers](#maintainers)
   - [Contributing](#contributing)
+    - [Issues](#issues)
+    - [Pull requests](#pull-requests)
+      - [Policy](#policy)
+      - [Style guide](#style-guide)
+      - [Code reviews](#code-reviews)
+    - [Code of conduct](#code-of-conduct)
   - [License](#license)
 
 ## Security
@@ -116,6 +125,8 @@ user.
   name of that property on the user object.
 - `[store = MemoryAdapter]` - The storage interface for user objects. Defaults
 to an object in memory (for testing only).
+- `[attestationEndpoint = '/register']` - the path of the challenge attestation
+endpoint.
 - `[assertionEndpoint = '/login']` - the path of the challenge assertion
 endpoint.
 - `[challengeEndpoint = '/response']` - the path of the challenge response
