@@ -125,8 +125,8 @@ user.
   name of that property on the user object.
 - `[store = MemoryAdapter]` - The storage interface for user objects. Defaults
 to an object in memory (for testing only).
-- `[attestationEndpoint = '/register']` - the path of the challenge attestation
-endpoint.
+- `[credentialEndpoint = '/register']` - the path of the credential attestation
+challenge endpoint.
 - `[assertionEndpoint = '/login']` - the path of the challenge assertion
 endpoint.
 - `[challengeEndpoint = '/response']` - the path of the challenge response
