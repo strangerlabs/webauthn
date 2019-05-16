@@ -18,6 +18,10 @@ class Client {
   constructor (options = {}) {
     const defaults = {
       pathPrefix: '/webauthn',
+      credentialEndpoint: '/register',
+      assertionEndpoint: '/login',
+      challengeEndpoint: '/response',
+      logoutEndpoint: '/logout',
     }
 
     Object.assign(this, defaults, options)
@@ -78,7 +82,7 @@ class Client {
   }
 
   async getMakeCredentialsChallenge (formBody) {
-    const response = await fetch(`${this.pathPrefix}/register`, {
+    const response = await fetch(`${this.pathPrefix}${this.credentialEndpoint}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -101,7 +105,7 @@ class Client {
   }
 
   async sendWebAuthnResponse (body) {
-    const response = await fetch(`${this.pathPrefix}/response`, {
+    const response = await fetch(`${this.pathPrefix}${this.challengeEndpoint}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -118,7 +122,7 @@ class Client {
   }
 
   async getGetAssertionChallenge (formBody) {
-    const response = await fetch(`${this.pathPrefix}/login`, {
+    const response = await fetch(`${this.pathPrefix}${this.assertionEndpoint}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -177,7 +181,7 @@ class Client {
   }
 
   async logout () {
-    const response = await fetch(`${this.pathPrefix}/logout`, {
+    const response = await fetch(`${this.pathPrefix}${this.logoutEndpoint}`, {
       method: 'GET',
       credentials: 'include',
     })

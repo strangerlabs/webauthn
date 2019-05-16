@@ -31,6 +31,10 @@ class Webauthn {
       userFields: ['name', 'displayName'],
       store: new MemoryAdapter(),
       rpName: 'ACME Corporation',
+      credentialEndpoint: '/register',
+      assertionEndpoint: '/login',
+      challengeEndpoint: '/response',
+      logoutEndpoint: '/logout',
     }, options)
 
     // Map object for field names from req param to db name.
@@ -49,13 +53,20 @@ class Webauthn {
   }
 
   initialize () {
+    const {
+      credentialEndpoint,
+      assertionEndpoint,
+      challengeEndpoint,
+      logoutEndpoint,
+    } = this.config
+
     const router = express.Router()
 
-    router.post('/login', this.login())
-    router.post('/register', this.register())
-    router.post('/response', this.response())
-    router.post('/logout', this.logout())
-    router.get('/logout', this.logout())
+    router.post(assertionEndpoint, this.login())
+    router.post(credentialEndpoint, this.register())
+    router.post(challengeEndpoint, this.response())
+    router.post(logoutEndpoint, this.logout())
+    router.get(logoutEndpoint, this.logout())
 
     return router
   }
@@ -117,20 +128,26 @@ class Webauthn {
 
     return async (req, res, next) => {
       if (!req.body) {
-        return res.status(400).json({ message: 'bad request' })
+        return res.status(400).json({
+          message: 'bad request',
+        })
       }
 
       const { [usernameField]: username } = req.body
 
       if (!username) {
-        return res.status(400).json({ message: `${usernameField} required` })
+        return res.status(400).json({
+          message: `${usernameField} required`,
+        })
       }
 
       try {
         const user = await this.store.get(username)
 
         if (!user) {
-          return res.status(401).json({ message: 'user does not exist' })
+          return res.status(401).json({
+            message: 'user does not exist',
+          })
         }
 
         const assertion = new AssertionChallengeBuilder(this)
@@ -157,7 +174,10 @@ class Webauthn {
           throw err
         }
 
-        return res.status(200).json({ message: 'logged out', status: 'ok' })
+        return res.status(200).json({
+          message: 'logged out',
+          status: 'ok',
+        })
       })
     }
   }
@@ -265,19 +285,18 @@ class Webauthn {
     } = options
 
     return async (req, res, next) => {
-      // Check session for login
-      // If logged in then resolve user
-      // else fail
-
       if (!req.session) {
-        next(new Error('No session')) // TODO error description sucks
+        next(new Error('No session found. Did you set up express-session correctly?'))
       }
 
       const fail = () => {
         if (failureRedirect) {
           return res.redirect(failureRedirect)
         } else {
-          return res.status(401).json({ status: 'failed', message: 'Unauthorized' })
+          return res.status(401).json({
+            status: 'failed',
+            message: 'Unauthorized',
+          })
         }
       }
 
