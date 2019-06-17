@@ -504,7 +504,7 @@ class Webauthn {
       }
 
       const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
-      const signatureBase = Buffer.concat([authrDataStruct.rpIdHash, authrDataStruct.flagsBuf, authrDataStruct.counterBuf, clientDataHash])
+      const signatureBase = Buffer.concat([authenticatorData, clientDataHash]);
 
       const publicKey = Webauthn.ASN1toPEM(base64url.toBuffer(authr.publicKey))
       const signature = base64url.toBuffer(webauthnResponse.signature)
