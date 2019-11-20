@@ -35,6 +35,7 @@ class Webauthn {
       assertionEndpoint: '/login',
       challengeEndpoint: '/response',
       logoutEndpoint: '/logout',
+      enableLogging: true,
     }, options)
 
     // Map object for field names from req param to db name.
@@ -79,7 +80,7 @@ class Webauthn {
         return res.status(400).json({ message: 'bad request' })
       }
 
-      console.log('REGISTER', req.body)
+      if (this.config.enableLogging) console.log('REGISTER', req.body)
 
       const username = req.body[usernameField]
       if (!username) {
@@ -103,10 +104,10 @@ class Webauthn {
         })
       }
 
-      console.log('PUT', user)
+      if (this.config.enableLogging) console.log('PUT', user)
       await this.store.put(username, user)
 
-      console.log('STORED')
+      if (this.config.enableLogging) console.log('STORED')
 
       const attestation = new AttestationChallengeBuilder(this)
         .setUserInfo(user)
@@ -117,7 +118,7 @@ class Webauthn {
       req.session.challenge = attestation.challenge
       req.session[usernameField] = username
 
-      console.log('DONE', attestation)
+      if (this.config.enableLogging) console.log('DONE', attestation)
 
       return res.status(200).json(attestation)
     }
@@ -157,7 +158,7 @@ class Webauthn {
         req.session.challenge = assertion.challenge
         req.session[usernameField] = username
 
-        console.log('LOGIN', assertion)
+        if (this.config.enableLogging) console.log('LOGIN', assertion)
 
         return res.status(200).json(assertion)
 
@@ -190,7 +191,7 @@ class Webauthn {
         return res.status(400).json({ message: 'bad bequest' })
       }
 
-      console.log('RESPONSE', req.body)
+      if (this.config.enableLogging) console.log('RESPONSE', req.body)
 
       const {
         id,
@@ -233,11 +234,11 @@ class Webauthn {
       let result
       const user = await this.store.get(username)
 
-      console.log('USER', user)
+      if (this.config.enableLogging) console.log('USER', user)
 
       try {
         if (response.attestationObject !== undefined) {
-          result = Webauthn.verifyAuthenticatorAttestationResponse(response)
+          result = Webauthn.verifyAuthenticatorAttestationResponse(response, this.config.enableLogging)
 
           if (result.verified) {
             user.authenticator = result.authrInfo
@@ -245,7 +246,7 @@ class Webauthn {
           }
 
         } else if (response.authenticatorData !== undefined) {
-          result = Webauthn.verifyAuthenticatorAssertionResponse(response, user.authenticator)
+          result = Webauthn.verifyAuthenticatorAssertionResponse(response, user.authenticator, this.config.enableLogging)
 
           if (result.verified) {
             if (result.counter <= user.authenticator.counter)
@@ -334,14 +335,14 @@ class Webauthn {
    * @ignore
    */
 
-  static verifyAuthenticatorAttestationResponse (webauthnResponse) {
+  static verifyAuthenticatorAttestationResponse (webauthnResponse, enableLogging = false) {
     const attestationBuffer = base64url.toBuffer(webauthnResponse.attestationObject);
     const ctapMakeCredResp = cbor.decodeAllSync(attestationBuffer)[0];
 
-    console.log('CTAP_RESPONSE', ctapMakeCredResp)
+    if (enableLogging) console.log('CTAP_RESPONSE', ctapMakeCredResp)
 
     const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
-    console.log('AUTHR_DATA_STRUCT', authrDataStruct)
+    if (enableLogging) console.log('AUTHR_DATA_STRUCT', authrDataStruct)
 
     const response = { 'verified': false };
     if (ctapMakeCredResp.fmt === 'fido-u2f') {
@@ -441,12 +442,16 @@ class Webauthn {
       }
 
     } else if (ctapMakeCredResp.fmt === 'android-safetynet') {
-      console.log("Android safetynet request\n")
-      console.log(ctapMakeCredResp)
+      if (enableLogging) {
+        console.log("Android safetynet request\n")
+        console.log(ctapMakeCredResp)
+      }
 
       const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
-      console.log('AUTH_DATA', authrDataStruct)
-      console.log('CLIENT_DATA_JSON ', base64url.decode(webauthnResponse.clientDataJSON))
+      if (enableLogging) {
+        console.log('AUTH_DATA', authrDataStruct)
+        console.log('CLIENT_DATA_JSON ', base64url.decode(webauthnResponse.clientDataJSON))
+      }
 
       const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
 
@@ -457,15 +462,17 @@ class Webauthn {
       payload = JSON.parse(base64url.decode(payload))
       signature = base64url.toBuffer(signature)
 
-      console.log('JWS HEADER', header)
-      console.log('JWS PAYLOAD', payload)
-      console.log('JWS SIGNATURE', signature)
+      if (enableLogging) {
+        console.log('JWS HEADER', header)
+        console.log('JWS PAYLOAD', payload)
+        console.log('JWS SIGNATURE', signature)
+      }
 
       const PEMCertificate = Webauthn.ASN1toPEM(Buffer.from(header.x5c[0], 'base64'))
 
       const pem = Certificate.fromPEM(PEMCertificate)
 
-      console.log('PEM', pem)
+      if (enableLogging) console.log('PEM', pem)
 
       response.verified = // Verify that sig is a valid signature over the concatenation of authenticatorData
         // and clientDataHash using the attestation public key in attestnCert with the algorithm specified in alg.
@@ -483,7 +490,7 @@ class Webauthn {
         }
       }
 
-      console.log('RESPONSE', response)
+      if (enableLogging) console.log('RESPONSE', response)
     } else {
       throw new Error(`Unsupported attestation format: ${ctapMakeCredResp.fmt}`);
     }
@@ -491,13 +498,13 @@ class Webauthn {
     return response
   }
 
-  static verifyAuthenticatorAssertionResponse (webauthnResponse, authr) {
+  static verifyAuthenticatorAssertionResponse (webauthnResponse, authr, enableLogging = false) {
     const authenticatorData = base64url.toBuffer(webauthnResponse.authenticatorData)
 
     const response = { 'verified': false }
     if (['fido-u2f'].includes(authr.fmt)) {
       const authrDataStruct = Webauthn.parseGetAssertAuthData(authenticatorData)
-      console.log('AUTH_DATA', authrDataStruct)
+      if (enableLogging) console.log('AUTH_DATA', authrDataStruct)
 
       if (!(authrDataStruct.flags & 0x01)) {// U2F_USER_PRESENTED
         throw new Error('User was not presented durring authentication!')
