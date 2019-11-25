@@ -71,6 +71,7 @@ const webauthn = new WebAuthn({
   //   delete: async (id) => {/* return boolean */},
   // },
   rpName: 'Stranger Labs, Inc.',
+  enableLogging: false,
 })
 
 // Mount webauthn endpoints
