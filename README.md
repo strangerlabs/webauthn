@@ -133,6 +133,7 @@ endpoint.
 - `[challengeEndpoint = '/response']` - the path of the challenge response
 endpoint.
 - `[logoutEndpoint = '/logout']` - the path of the logout endpoint.
+- `[enableLogging = true]` - Enable or disable logging to stdout.
 
 **`webauthn.initialize()`**
 
