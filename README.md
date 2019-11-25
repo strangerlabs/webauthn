@@ -9,7 +9,6 @@ WebAuthn is a [W3C standard][w3c] that enables web developers to replace passwor
 [w3c]: https://w3c.github.io/webauthn/
 [fido2]: https://fidoalliance.org/fido2/
 
-
 ## Table of Contents
 
 - [WebAuthn](#webauthn)
@@ -237,6 +236,8 @@ request to the `logoutEndpoint`.
 [@EternalDeiwos](https://github.com/EternalDeiwos)
 
 [@christiansmith](https://github.com/christiansmith)
+
+Originally adapted from [fidoalliance/webauthn-demo](https://github.com/fido-alliance/webauthn-demo).
 
 ## Contributing
 
