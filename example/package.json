@@ -2,6 +2,7 @@
   "name": "webauthn-demo",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:3001",
   "dependencies": {
     "body-parser": "^1.19.0",
     "bootstrap": "^4.3.1",
@@ -14,7 +15,8 @@
     "webauthn": "^0.1.2"
   },
   "scripts": {
-    "dev": "react-scripts start",
+    "dev-client": "react-scripts start",
+    "dev-server": "PORT=3001 nodemon server.js",
     "server": "nodemon server.js",
     "start": "npm run build && npm run server",
     "build": "react-scripts build",
