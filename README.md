@@ -125,6 +125,9 @@ user.
   name of that property on the user object.
 - `[store = MemoryAdapter]` - The storage interface for user objects. Defaults
 to an object in memory (for testing only).
+- `[attestation = 'none']` - the [attestation conveyance preference](
+https://w3c.github.io/webauthn/#enum-attestation-convey). Setting this to
+anything other than `'none'` will require attestation and validate it.
 - `[credentialEndpoint = '/register']` - the path of the credential attestation
 challenge endpoint.
 - `[assertionEndpoint = '/login']` - the path of the challenge assertion
