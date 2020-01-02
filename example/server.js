@@ -62,8 +62,10 @@ const webauthn = new Webauthn({
 app.use('/webauthn', webauthn.initialize())
 
 // Endpoint without passport
-app.get('/secret', webauthn.authenticate(), (req, res) => {
-  res.status(200).json({ status: 'ok', message: `Super secret message for ${req.user.displayName}` })
+app.get('/authenticators', webauthn.authenticate(), async (req, res) => {
+  res.status(200).json([
+      await webauthn.store.get(req.session.username)
+  ].map(user => user.authenticator))
 })
 
 // Debug
