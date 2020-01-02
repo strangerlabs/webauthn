@@ -139,45 +139,35 @@ class Client {
   }
 
   async register (data = {}) {
-    try {
-      const challenge = await this.getMakeCredentialsChallenge(data)
-      console.log('REGISTER CHALLENGE', challenge)
+    const challenge = await this.getMakeCredentialsChallenge(data)
+    console.log('REGISTER CHALLENGE', challenge)
 
-      const publicKey = Client.preformatMakeCredReq(challenge)
-      console.log('REGISTER PUBLIC KEY', publicKey)
+    const publicKey = Client.preformatMakeCredReq(challenge)
+    console.log('REGISTER PUBLIC KEY', publicKey)
 
-      const credential = await navigator.credentials.create({ publicKey })
-      console.log('REGISTER CREDENTIAL', credential)
+    const credential = await navigator.credentials.create({ publicKey })
+    console.log('REGISTER CREDENTIAL', credential)
 
-      const credentialResponse = Client.publicKeyCredentialToJSON(credential)
-      console.log('REGISTER RESPONSE', credentialResponse)
+    const credentialResponse = Client.publicKeyCredentialToJSON(credential)
+    console.log('REGISTER RESPONSE', credentialResponse)
 
-      return await this.sendWebAuthnResponse(credentialResponse)
-
-    } catch (err) {
-      console.error(err)
-    }
+    return await this.sendWebAuthnResponse(credentialResponse)
   }
 
   async login (data = {}) {
-    try {
-      const challenge = await this.getGetAssertionChallenge(data)
-      console.log('LOGIN CHALLENGE', challenge)
+    const challenge = await this.getGetAssertionChallenge(data)
+    console.log('LOGIN CHALLENGE', challenge)
 
-      const publicKey = Client.preformatGetAssertReq(challenge)
-      console.log('LOGIN PUBLIC KEY', publicKey)
+    const publicKey = Client.preformatGetAssertReq(challenge)
+    console.log('LOGIN PUBLIC KEY', publicKey)
 
-      const credential = await navigator.credentials.get({ publicKey })
-      console.log('LOGIN CREDENTIAL', credential)
+    const credential = await navigator.credentials.get({ publicKey })
+    console.log('LOGIN CREDENTIAL', credential)
 
-      const credentialResponse = Client.publicKeyCredentialToJSON(credential)
-      console.log('LOGIN RESPONSE', credentialResponse)
+    const credentialResponse = Client.publicKeyCredentialToJSON(credential)
+    console.log('LOGIN RESPONSE', credentialResponse)
 
-      return await this.sendWebAuthnResponse(credentialResponse)
-
-    } catch (err) {
-      console.error(err)
-    }
+    return await this.sendWebAuthnResponse(credentialResponse)
   }
 
   async logout () {
