@@ -39,6 +39,7 @@ class Webauthn {
       enableLogging: true,
       attestation: Dictionaries.AttestationConveyancePreference.NONE,
       authenticator: Dictionaries.AuthenticatorAttachment.CROSS_PLATFORM,
+      requireUserVerification: false,
     }, options)
 
     const attestationOptions = Object.values(Dictionaries.AttestationConveyancePreference)
@@ -118,6 +119,9 @@ class Webauthn {
       if (this.config.enableLogging) console.log('STORED')
 
       const attestation = new AttestationChallengeBuilder(this)
+        .setUserVerification(this.config.requireUserVerification ?
+              Dictionaries.UserVerificationRequirement.REQUIRED
+            : Dictionaries.UserVerificationRequirement.DISCOURAGED)
         .setUserInfo(user)
         .setAttestationType(this.config.attestation)
         .setAuthenticator(this.config.authenticator)
@@ -261,7 +265,7 @@ class Webauthn {
           }
 
         } else if (response.authenticatorData !== undefined) {
-          result = Webauthn.verifyAuthenticatorAssertionResponse(response, user.authenticator, this.config.enableLogging)
+          result = this.verifyAuthenticatorAssertionResponse(response, user.authenticator)
 
           if (result.verified) {
             if (result.counter <= user.authenticator.counter)
@@ -359,8 +363,13 @@ class Webauthn {
     const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
     if (this.config.enableLogging) console.log('AUTHR_DATA_STRUCT', authrDataStruct)
 
-    if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
-      throw new Error('User was NOT presented durring authentication!');
+    if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENT
+      throw new Error('User was not present during authentication!');
+
+    if (this.config.requireUserVerification && !(authrDataStruct.flags & 0x04)) {// U2F_USER_VERIFIED
+      throw new Error('User was not verified during authentication!')
+    }
+
 
     const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
 
@@ -475,16 +484,20 @@ class Webauthn {
     return response
   }
 
-  static verifyAuthenticatorAssertionResponse (webauthnResponse, authr, enableLogging = false) {
+  verifyAuthenticatorAssertionResponse (webauthnResponse, authr) {
     const authenticatorData = base64url.toBuffer(webauthnResponse.authenticatorData)
 
     const response = { 'verified': false }
     if (['fido-u2f'].includes(authr.fmt)) {
       const authrDataStruct = Webauthn.parseGetAssertAuthData(authenticatorData)
-      if (enableLogging) console.log('AUTH_DATA', authrDataStruct)
+      if (this.config.enableLogging) console.log('AUTH_DATA', authrDataStruct)
 
-      if (!(authrDataStruct.flags & 0x01)) {// U2F_USER_PRESENTED
-        throw new Error('User was not presented durring authentication!')
+      if (!(authrDataStruct.flags & 0x01)) {// U2F_USER_PRESENT
+        throw new Error('User was not present during authentication!')
+      }
+
+      if (this.config.requireUserVerification && !(authrDataStruct.flags & 0x04)) {// U2F_USER_VERIFIED
+        throw new Error('User was not verified during authentication!')
       }
 
       const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))

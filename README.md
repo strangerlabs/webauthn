@@ -126,11 +126,13 @@ user.
   - An object mapping, where the key is the name of a property from the
   registration request to be included in the user object and the value is the
   name of that property on the user object.
-- `[store = MemoryAdapter]` - The storage interface for user objects. Defaults
+- `[store = MemoryAdapter]` - the storage interface for user objects. Defaults
 to an object in memory (for testing only).
 - `[attestation = 'none']` - the [attestation conveyance preference](
 https://w3c.github.io/webauthn/#enum-attestation-convey). Setting this to
 anything other than `'none'` will require attestation and validate it.
+- `[requireUserVerification = false]` - whether to require [user verification](
+https://w3c.github.io/webauthn/#user-verification).
 - `[credentialEndpoint = '/register']` - the path of the credential attestation
 challenge endpoint.
 - `[assertionEndpoint = '/login']` - the path of the challenge assertion
@@ -138,7 +140,7 @@ endpoint.
 - `[challengeEndpoint = '/response']` - the path of the challenge response
 endpoint.
 - `[logoutEndpoint = '/logout']` - the path of the logout endpoint.
-- `[enableLogging = true]` - Enable or disable logging to stdout.
+- `[enableLogging = true]` - enable or disable logging to stdout.
 
 **`webauthn.initialize()`**
 
