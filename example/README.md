@@ -42,6 +42,20 @@ const webauthn = new Webauthn({
 $ npm start
 ```
 
+## Development
+
+For an unoptimized development version, first run the server:
+
+```sh
+$ npm run dev-server
+```
+
+Then in another terminal, run the react application in development mode:
+
+```sh
+$ npm run dev-client
+```
+
 ## Contributing
 
 Small note: If editing the README, please conform to the [standard-readme](https://github.com/RichardLitt/standard-readme) specification.

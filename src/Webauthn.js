@@ -18,6 +18,7 @@ const { Certificate } = require('@fidm/x509')
 const MemoryAdapter = require('./MemoryAdapter')
 const AttestationChallengeBuilder = require('./AttestationChallengeBuilder')
 const AssertionChallengeBuilder = require('./AssertionChallengeBuilder')
+const Dictionaries = require('./Dictionaries')
 
 /**
  * Webauthn RP
@@ -36,7 +37,13 @@ class Webauthn {
       challengeEndpoint: '/response',
       logoutEndpoint: '/logout',
       enableLogging: true,
+      attestation: Dictionaries.AttestationConveyancePreference.NONE,
     }, options)
+
+    const attestationOptions = Object.values(Dictionaries.AttestationConveyancePreference)
+    if (!attestationOptions.includes(this.config.attestation)) {
+      throw new Error(`Invalid attestation value ${attestation}. Must be one of "${attestationOptions.join('", "')}".`)
+    }
 
     // Map object for field names from req param to db name.
     if (Array.isArray(this.config.userFields)) {
@@ -111,6 +118,7 @@ class Webauthn {
 
       const attestation = new AttestationChallengeBuilder(this)
         .setUserInfo(user)
+        .setAttestationType(this.config.attestation)
         // .setAuthenticator() // Forces TPM
         .setRelyingPartyInfo({ name: this.config.rpName || options.rpName })
         .build({ status: 'ok' })
@@ -148,6 +156,12 @@ class Webauthn {
         if (!user) {
           return res.status(401).json({
             message: 'user does not exist',
+          })
+        }
+
+        if (!user.authenticator) {
+          return res.status(401).json({
+            message: 'user has not registered an authenticator',
           })
         }
 
@@ -238,7 +252,7 @@ class Webauthn {
 
       try {
         if (response.attestationObject !== undefined) {
-          result = Webauthn.verifyAuthenticatorAttestationResponse(response, this.config.enableLogging)
+          result = this.verifyAuthenticatorAttestationResponse(response);
 
           if (result.verified) {
             user.authenticator = result.authrInfo
@@ -335,45 +349,36 @@ class Webauthn {
    * @ignore
    */
 
-  static verifyAuthenticatorAttestationResponse (webauthnResponse, enableLogging = false) {
+  verifyAuthenticatorAttestationResponse (webauthnResponse) {
     const attestationBuffer = base64url.toBuffer(webauthnResponse.attestationObject);
     const ctapMakeCredResp = cbor.decodeAllSync(attestationBuffer)[0];
 
-    if (enableLogging) console.log('CTAP_RESPONSE', ctapMakeCredResp)
+    if (this.config.enableLogging) console.log('CTAP_RESPONSE', ctapMakeCredResp)
 
     const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
-    if (enableLogging) console.log('AUTHR_DATA_STRUCT', authrDataStruct)
+    if (this.config.enableLogging) console.log('AUTHR_DATA_STRUCT', authrDataStruct)
+
+    if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
+      throw new Error('User was NOT presented durring authentication!');
+
+    const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
 
     const response = { 'verified': false };
-    if (ctapMakeCredResp.fmt === 'fido-u2f') {
-      if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
-        throw new Error('User was NOT presented durring authentication!');
-
+    if (ctapMakeCredResp.fmt === 'none') {
+      if (this.config.enableLogging) console.log('None attestation')
+      response.verified = this.config.attestation == Dictionaries.AttestationConveyancePreference.NONE
+    } else if (ctapMakeCredResp.fmt === 'fido-u2f') {
       const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
       const reservedByte = Buffer.from([0x00]);
-      const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
       const signatureBase = Buffer.concat([reservedByte, authrDataStruct.rpIdHash, clientDataHash, authrDataStruct.credID, publicKey]);
 
       const PEMCertificate = Webauthn.ASN1toPEM(ctapMakeCredResp.attStmt.x5c[0]);
       const signature = ctapMakeCredResp.attStmt.sig;
 
       response.verified = Webauthn.verifySignature(signature, signatureBase, PEMCertificate)
-
-      if (response.verified) {
-        response.authrInfo = {
-          fmt: 'fido-u2f',
-          publicKey: base64url.encode(publicKey),
-          counter: authrDataStruct.counter,
-          credID: base64url.encode(authrDataStruct.credID)
-        }
-      }
-
     } else if (ctapMakeCredResp.fmt === 'packed' && ctapMakeCredResp.attStmt.hasOwnProperty('x5c')) {
-      if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
-        throw new Error('User was NOT presented durring authentication!');
-
+      if (this.config.enableLogging) console.log('Packed attestation')
       const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
-      const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
       const signatureBase = Buffer.concat([ctapMakeCredResp.authData, clientDataHash]);
 
       const PEMCertificate = Webauthn.ASN1toPEM(ctapMakeCredResp.attStmt.x5c[0]);
@@ -407,22 +412,10 @@ class Webauthn {
             !aaguid_ext.critical && aaguid_ext.value.slice(2).equals(authrDataStruct.aaguid) : false)
           : true);
 
-      if (response.verified) {
-        response.authrInfo = {
-          fmt: 'fido-u2f',
-          publicKey: base64url.encode(publicKey),
-          counter: authrDataStruct.counter,
-          credID: base64url.encode(authrDataStruct.credID)
-        }
-      }
-
       // Self signed
     } else if (ctapMakeCredResp.fmt === 'packed') {
-      if (!(authrDataStruct.flags & 0x01)) // U2F_USER_PRESENTED
-        throw new Error('User was NOT presented durring authentication!');
-
+      if (this.config.enableLogging) console.log('Self signed attestation')
       const clientDataHash = Webauthn.hash(base64url.toBuffer(webauthnResponse.clientDataJSON))
-      const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
       const signatureBase = Buffer.concat([ctapMakeCredResp.authData, clientDataHash]);
       const PEMCertificate = Webauthn.ASN1toPEM(publicKey);
 
@@ -431,29 +424,11 @@ class Webauthn {
       response.verified = // Verify that sig is a valid signature over the concatenation of authenticatorData
         // and clientDataHash using the attestation public key in attestnCert with the algorithm specified in alg.
         Webauthn.verifySignature(signature, signatureBase, PEMCertificate) && alg === -7
-
-      if (response.verified) {
-        response.authrInfo = {
-          fmt: 'fido-u2f',
-          publicKey: base64url.encode(publicKey),
-          counter: authrDataStruct.counter,
-          credID: base64url.encode(authrDataStruct.credID)
-        }
-      }
-
     } else if (ctapMakeCredResp.fmt === 'android-safetynet') {
-      if (enableLogging) {
+      if (this.config.enableLogging) {
         console.log("Android safetynet request\n")
         console.log(ctapMakeCredResp)
       }
-
-      const authrDataStruct = Webauthn.parseMakeCredAuthData(ctapMakeCredResp.authData);
-      if (enableLogging) {
-        console.log('AUTH_DATA', authrDataStruct)
-        console.log('CLIENT_DATA_JSON ', base64url.decode(webauthnResponse.clientDataJSON))
-      }
-
-      const publicKey = Webauthn.COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
 
       let [header, payload, signature] = ctapMakeCredResp.attStmt.response.toString('utf8').split('.')
       const signatureBase = Buffer.from([header, payload].join('.'))
@@ -462,7 +437,7 @@ class Webauthn {
       payload = JSON.parse(base64url.decode(payload))
       signature = base64url.toBuffer(signature)
 
-      if (enableLogging) {
+      if (this.config.enableLogging) {
         console.log('JWS HEADER', header)
         console.log('JWS PAYLOAD', payload)
         console.log('JWS SIGNATURE', signature)
@@ -472,7 +447,7 @@ class Webauthn {
 
       const pem = Certificate.fromPEM(PEMCertificate)
 
-      if (enableLogging) console.log('PEM', pem)
+      if (this.config.enableLogging) console.log('PEM', pem)
 
       response.verified = // Verify that sig is a valid signature over the concatenation of authenticatorData
         // and clientDataHash using the attestation public key in attestnCert with the algorithm specified in alg.
@@ -480,19 +455,20 @@ class Webauthn {
         // version must be 3 (which is indicated by an ASN.1 INTEGER with value 2)
         pem.version == 3 &&
         pem.subject.commonName === 'attest.android.com'
-
-      if (response.verified) {
-        response.authrInfo = {
-          fmt: 'fido-u2f',
-          publicKey: base64url.encode(publicKey),
-          counter: authrDataStruct.counter,
-          credID: base64url.encode(authrDataStruct.credID)
-        }
-      }
-
-      if (enableLogging) console.log('RESPONSE', response)
     } else {
       throw new Error(`Unsupported attestation format: ${ctapMakeCredResp.fmt}`);
+    }
+
+    if (response.verified) {
+      response.authrInfo = {
+        fmt: 'fido-u2f',
+        publicKey: base64url.encode(publicKey),
+        counter: authrDataStruct.counter,
+        credID: base64url.encode(authrDataStruct.credID)
+      }
+      if (this.config.enableLogging) console.log('RESPONSE', response)
+    } else if (this.config.enableLogging) {
+      console.log('MakeCredential request could not be verified')
     }
 
     return response

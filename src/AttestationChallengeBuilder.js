@@ -169,14 +169,7 @@ class AttestationChallengeBuilder {
   }
 
   setAttestationType (attestation = Dictionaries.AttestationConveyancePreference.DIRECT) {
-    const values = Object.values(Dictionaries.AttestationConveyancePreference)
-
-    if (!values.includes(attestation)) {
-      throw new Error(`Invalid AttestationConveyancePreference value. Must be one of "${values.join('", "')}".`)
-    }
-
     this.result.attestation = attestation
-
     return this
   }
 
