@@ -27,6 +27,7 @@ WebAuthn is a [W3C standard][w3c] that enables web developers to replace passwor
       - [Policy](#policy)
       - [Style guide](#style-guide)
       - [Code reviews](#code-reviews)
+    - [Tests](#tests)
     - [Code of conduct](#code-of-conduct)
   - [License](#license)
 
@@ -278,6 +279,10 @@ Originally adapted from [fidoalliance/webauthn-demo](https://github.com/fido-all
 
 * required before merging PRs
 * reviewers MUST run and test the code under review
+
+### Tests
+
+Run the test suite with `npm test`.
 
 ### Code of conduct
 

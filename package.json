@@ -4,7 +4,8 @@
   "description": "W3C Web Authentication API Relying Party for Node.js and Express",
   "main": "src/Webauthn.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha",
+    "coverage": "nyc --reporter=html --report-dir coverage mocha"
   },
   "repository": {
     "type": "git",
@@ -51,5 +52,10 @@
     "iso-3166-1": "^1.1.0",
     "level": "^5.0.1",
     "lodash": "^4.17.14"
+  },
+  "devDependencies": {
+    "mocha": "^7.0.0",
+    "nyc": "^15.0.0",
+    "sinon": "^8.0.4"
   }
 }
