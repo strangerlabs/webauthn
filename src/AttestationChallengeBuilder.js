@@ -96,11 +96,15 @@ class AttestationChallengeBuilder {
     }
 
     if (Array.isArray(options)) {
-      options.forEach(option => this.addCredentialRequest(option))
+      options.forEach(option => this.addCredentialExclusion(option))
       return this
     }
 
-    const { type, id, transports = [] } = options
+    const {
+      id,
+      type = PublicKeyCredentialType.PUBLIC_KEY,
+      transports = Object.values(AuthenticatorTransport),
+    } = options
 
     if (
       !type
