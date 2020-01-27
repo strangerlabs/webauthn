@@ -1,6 +1,8 @@
 # WebAuthn
 
 [![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![build-status](https://travis-ci.com/strangerlabs/webauthn.svg?branch=master)](https://travis-ci.com/strangerlabs/webauthn)
+[![codecov](https://codecov.io/gh/strangerlabs/webauthn/branch/master/graph/badge.svg)](https://codecov.io/gh/strangerlabs/webauthn)
 
 > W3C Web Authentication API Relying Party for Node.js and Express
 
