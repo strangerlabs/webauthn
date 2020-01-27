@@ -152,7 +152,7 @@ class AttestationChallengeBuilder {
     return this
   }
 
-  setAuthenticator (authenticatorAttachment = Dictionaries.AuthenticatorAttachment.PLATFORM) {
+  setAuthenticator (authenticatorAttachment) {
     const { authenticatorSelection = {} } = this.result
     const values = Object.values(Dictionaries.AuthenticatorAttachment)
 
@@ -168,7 +168,7 @@ class AttestationChallengeBuilder {
     return this
   }
 
-  setAttestationType (attestation = Dictionaries.AttestationConveyancePreference.DIRECT) {
+  setAttestationType (attestation) {
     this.result.attestation = attestation
     return this
   }
