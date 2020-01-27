@@ -38,6 +38,7 @@ class Webauthn {
       logoutEndpoint: '/logout',
       enableLogging: true,
       attestation: Dictionaries.AttestationConveyancePreference.NONE,
+      authenticator: Dictionaries.AuthenticatorAttachment.CROSS_PLATFORM,
     }, options)
 
     const attestationOptions = Object.values(Dictionaries.AttestationConveyancePreference)
@@ -119,7 +120,7 @@ class Webauthn {
       const attestation = new AttestationChallengeBuilder(this)
         .setUserInfo(user)
         .setAttestationType(this.config.attestation)
-        // .setAuthenticator() // Forces TPM
+        .setAuthenticator(this.config.authenticator)
         .setRelyingPartyInfo({ name: this.config.rpName || options.rpName })
         .build({ status: 'ok' })
 
