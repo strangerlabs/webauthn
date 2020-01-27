@@ -5,7 +5,7 @@
   "main": "src/Webauthn.js",
   "scripts": {
     "test": "mocha",
-    "coverage": "nyc --reporter=html --report-dir coverage mocha"
+    "coverage": "nyc --reporter=lcov --report-dir coverage _mocha"
   },
   "repository": {
     "type": "git",

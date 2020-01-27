@@ -1,0 +1,11 @@
+sudo: false
+
+language: node_js
+
+node_js: "12.14.1"
+
+install: npm i
+
+script: npm run coverage
+
+after_script: npx codecov
