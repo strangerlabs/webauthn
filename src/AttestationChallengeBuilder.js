@@ -87,39 +87,31 @@ class AttestationChallengeBuilder {
     return this
   }
 
-  addCredentialExclusion (options = {}) {
+  addCredentialExclusion (credentials) {
+    if (typeof credentials === 'undefined')
+      credentials = []
+
+    if (!Array.isArray(credentials))
+      credentials = [credentials]
+
     const { AuthenticatorTransport, PublicKeyCredentialType } = Dictionaries
     let { excludeCredentials = [] } = this.result
 
-    if (!Array.isArray(excludeCredentials)) {
-      excludeCredentials = [excludeCredentials]
-    }
-
-    if (Array.isArray(options)) {
-      options.forEach(option => this.addCredentialRequest(option))
-      return this
-    }
-
-    const { type, id, transports = [] } = options
-
-    if (
-      !type
-      || !id
-      || !Object.values(PublicKeyCredentialType).includes(type)
-      || !Array.isArray(transports)
-    ) {
-      throw new Error('Invalid PublicKeyCredentialDescriptor. See https://www.w3.org/TR/webauthn/#dictdef-publickeycredentialdescriptor')
-    }
-
-    const transportValues = Object.values(AuthenticatorTransport)
-    transports.forEach(transport => {
-      if (!transportValues.includes(transport)) {
-        throw new Error('Invalid AuthenticatorTransport. See https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport')
+    credentials.map(credential => ({
+      type: credential.type || 'public-key',
+      id: credential.id,
+      transports: credential.transports || [],
+    })).forEach(excluded => {
+      if (
+        !excluded.type
+        || !excluded.id
+        || !Object.values(PublicKeyCredentialType).includes(excluded.type)
+        || !Array.isArray(excluded.transports)
+      ) {
+        throw new Error('Invalid PublicKeyCredentialDescriptor:', excluded, '. See https://www.w3.org/TR/webauthn/#dictdef-publickeycredentialdescriptor')
       }
-    })
-
-    // Add credential request
-    excludeCredentials.push({ type, id, transports })
+      excludeCredentials.push(excluded)
+    });
 
     this.result.excludeCredentials = excludeCredentials
     return this
@@ -180,7 +172,7 @@ class AttestationChallengeBuilder {
 
   build (override = {}) {
     const challenge = base64url(crypto.randomBytes(32))
-    const { rp, user, attestation, pubKeyCredParams } = this.result
+    const { rp, user, attestation, pubKeyCredParams, excludeCredentials } = this.result
 
     if (!rp) {
       throw new Error('Requires RP information')
@@ -197,6 +189,10 @@ class AttestationChallengeBuilder {
     if (!pubKeyCredParams || !pubKeyCredParams.length) {
       // ECDSA P-256 with SHA2-256 hash
       this.addCredentialRequest({ type: 'public-key', alg: -7 })
+    }
+
+    if (!excludeCredentials) {
+      this.addCredentialExclusion()
     }
 
     return { ...this.result, ...override, challenge }
