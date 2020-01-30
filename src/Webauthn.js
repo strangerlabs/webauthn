@@ -95,32 +95,27 @@ class Webauthn {
         return res.status(400).json({ message: 'bad request' })
       }
 
-      const user = {
-        id: base64url(crypto.randomBytes(32)),
-        [usernameField]: username,
-      }
-
-      Object.entries(this.config.userFields).forEach(([bodyKey, dbKey]) => {
-        user[dbKey] = req.body[bodyKey]
-      })
-
-      const existing = await this.store.get(username)
-      if (existing && existing.authenticator) {
-        return res.status(403).json({
-          'status': 'failed',
-          'message': `${usernameField} ${username} already exists`,
+      let user = await this.store.get(username)
+      if (!user) {
+        user = {
+          id: base64url(crypto.randomBytes(32)),
+          [usernameField]: username,
+          credentials: [],
+        }
+        Object.entries(this.config.userFields).forEach(([bodyKey, dbKey]) => {
+          user[dbKey] = req.body[bodyKey]
         })
+        if (this.config.enableLogging) console.log('PUT', user)
+        await this.store.put(username, user)
+        if (this.config.enableLogging) console.log('STORED')
       }
-
-      if (this.config.enableLogging) console.log('PUT', user)
-      await this.store.put(username, user)
-
-      if (this.config.enableLogging) console.log('STORED')
 
       const attestation = new AttestationChallengeBuilder(this)
         .setUserInfo(user)
         .setAttestationType(this.config.attestation)
         .setAuthenticator(this.config.authenticator)
+        .addCredentialExclusion(
+            user.credentials.map(credential => ({ id: credential.credID })))
         .setRelyingPartyInfo({ name: this.config.rpName || options.rpName })
         .build({ status: 'ok' })
 
@@ -160,15 +155,16 @@ class Webauthn {
           })
         }
 
-        if (!user.authenticator) {
+        if (user.credentials.length === 0) {
           return res.status(401).json({
             message: 'user has not registered an authenticator',
           })
         }
 
         const assertion = new AssertionChallengeBuilder(this)
-          .addAllowedCredential({ id: user.authenticator.credID })
-          .build({ status: 'ok' })
+            .addAllowedCredential(
+                user.credentials.map(credential => ({ id: credential.credID })))
+            .build({ status: 'ok' })
 
         req.session.challenge = assertion.challenge
         req.session[usernameField] = username
@@ -256,18 +252,22 @@ class Webauthn {
           result = this.verifyAuthenticatorAttestationResponse(response);
 
           if (result.verified) {
-            user.authenticator = result.authrInfo
+            user.credentials.push(result.authrInfo)
             await this.store.put(username, user)
           }
 
         } else if (response.authenticatorData !== undefined) {
-          result = Webauthn.verifyAuthenticatorAssertionResponse(response, user.authenticator, this.config.enableLogging)
+          let authenticator =
+              user.credentials.find(credential => credential.credID === id)
+
+          result = Webauthn.verifyAuthenticatorAssertionResponse(
+              response, authenticator, this.config.enableLogging)
 
           if (result.verified) {
-            if (result.counter <= user.authenticator.counter)
+            if (result.counter <= authenticator.counter)
               throw new Error('Authr counter did not increase!')
 
-            user.authenticator.counter = result.counter
+            authenticator.counter = result.counter
             await this.store.put(username, user)
           }
 

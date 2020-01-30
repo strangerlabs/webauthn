@@ -62,10 +62,8 @@ const webauthn = new Webauthn({
 app.use('/webauthn', webauthn.initialize())
 
 // Endpoint without passport
-app.get('/authenticators', webauthn.authenticate(), async (req, res) => {
-  res.status(200).json([
-      await webauthn.store.get(req.session.username)
-  ].map(user => user.authenticator))
+app.get('/credentials', webauthn.authenticate(), async (req, res) => {
+  res.status(200).json((await webauthn.store.get(req.session.username)).credentials)
 })
 
 // Debug

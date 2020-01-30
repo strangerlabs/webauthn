@@ -1,6 +1,6 @@
 import React from 'react'
-import { Container, Row, Col, Button } from 'react-bootstrap'
-import AuthenticatorCard from './AuthenticatorCard'
+import { Container, Row, Col, Button, CardColumns } from 'react-bootstrap'
+import CredentialCard from './CredentialCard'
 import Client from 'webauthn/client'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
@@ -9,10 +9,10 @@ class User extends React.Component {
     super(props)
 
     this.state = {
-      authenticators: []
+      credentials: []
     }
 
-    fetch('authenticators', {
+    fetch('credentials', {
       method: 'GET',
       credentials: 'include',
     }).then(response => {
@@ -21,8 +21,8 @@ class User extends React.Component {
         return
       }
       return response.json()
-    }).then(authenticators => {
-      this.setState({ authenticators })
+    }).then(credentials => {
+      this.setState({ credentials })
     })
   }
 
@@ -36,15 +36,17 @@ class User extends React.Component {
         <Row style={{ paddingTop: 80}}>
           <Col>
             <h2>Welcome {this.props.user.username}</h2>
-            <h3>Your authenticators:</h3>
+            <h3>Your credentials:</h3>
           </Col>
           <Col className="text-right">
             <Button variant="primary" onClick={this.logout}>Log Out</Button>
           </Col>
         </Row>
-        {this.state.authenticators.map(authenticator => <Row key={authenticator.credID}>
-          <Col><AuthenticatorCard authenticator={authenticator} /></Col>
-        </Row>)}
+        <CardColumns>
+          {this.state.credentials.map(credential =>
+            <Col key={credential.credID}><CredentialCard credential={credential} /></Col>
+          )}
+        </CardColumns>
       </Container>
     )
   }
