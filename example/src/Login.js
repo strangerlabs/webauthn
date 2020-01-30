@@ -31,9 +31,7 @@ function Login (props) {
     webauthn.register({ name, username }).then(response => {
       console.log('Register response: ', response)
       setSuccess('Registration successful. Try logging in.')
-    }).catch(error => {
-      setError(error.message)
-    })
+    });
   }
 
   function onLogin () {
@@ -47,7 +45,7 @@ function Login (props) {
         props.onLogin({
           username,
         });
-    }).catch(error => setError(error.message))
+    });
   }
 
   return (

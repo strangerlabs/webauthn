@@ -465,7 +465,8 @@ class Webauthn {
         fmt: 'fido-u2f',
         publicKey: base64url.encode(publicKey),
         counter: authrDataStruct.counter,
-        credID: base64url.encode(authrDataStruct.credID)
+        credID: base64url.encode(authrDataStruct.credID),
+        transports: webauthnResponse.transports,
       }
       if (this.config.enableLogging) console.log('RESPONSE', response)
     } else if (this.config.enableLogging) {

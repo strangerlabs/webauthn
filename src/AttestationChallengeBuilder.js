@@ -108,7 +108,7 @@ class AttestationChallengeBuilder {
         || !Object.values(PublicKeyCredentialType).includes(excluded.type)
         || !Array.isArray(excluded.transports)
       ) {
-        throw new Error('Invalid PublicKeyCredentialDescriptor. See https://www.w3.org/TR/webauthn/#dictdef-publickeycredentialdescriptor')
+        throw new Error('Invalid PublicKeyCredentialDescriptor:', excluded, '. See https://www.w3.org/TR/webauthn/#dictdef-publickeycredentialdescriptor')
       }
       excludeCredentials.push(excluded)
     });

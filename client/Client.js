@@ -152,6 +152,10 @@ class Client {
     console.log('REGISTER CREDENTIAL', credential)
 
     const credentialResponse = Client.publicKeyCredentialToJSON(credential)
+    if (credential.response.getTransports)
+      credentialResponse.response.transports = credential.response.getTransports()
+    else
+      credentialResponse.response.transports = []
     console.log('REGISTER RESPONSE', credentialResponse)
 
     return await this.sendWebAuthnResponse(credentialResponse)

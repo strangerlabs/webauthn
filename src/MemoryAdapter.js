@@ -41,15 +41,6 @@ class MemoryAdapter {
 
     return false
   }
-
-  async search (id = '') {
-    return Object.entries(this.db)
-      .filter(([key]) => key.startsWith(id))
-      .reduce((state, [key, value]) => {
-        state[key] = value
-        return state
-      }, {})
-  }
 }
 
 /**

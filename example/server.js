@@ -52,7 +52,6 @@ const webauthn = new Webauthn({
   // store: {
   //   put: async (id, value) => {/* return <void> */},
   //   get: async (id) => {/* return User */},
-  //   search: async (search) => {/* return { [username]: User } */},
   //   delete: async (id) => {/* return boolean */},
   // },
   rpName: 'Stranger Labs, Inc.',
@@ -64,11 +63,6 @@ app.use('/webauthn', webauthn.initialize())
 // Endpoint without passport
 app.get('/credentials', webauthn.authenticate(), async (req, res) => {
   res.status(200).json((await webauthn.store.get(req.session.username)).credentials)
-})
-
-// Debug
-app.get('/db', async (req, res) => {
-  res.status(200).json(await webauthn.store.search())
 })
 
 // Debug

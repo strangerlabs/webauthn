@@ -60,30 +60,6 @@ class LevelAdapter {
       throw err
     }
   }
-
-  async search (startsWith = '', options = {}) {
-    if (typeof startsWith === 'object') {
-      options = startsWith
-      startsWith = options.startsWith || options.gte || options.search
-    }
-
-    const { limit = -1, reverse = false, lte } = options
-
-    return await new Promise((resolve, reject) => {
-      const data = {}
-
-      // Get all values that start with `startsWith`
-      this.db.createReadStream({
-        gte: startsWith,
-        lte: lte ? lte : `${startsWith}\uffff`,
-        limit,
-        reverse,
-      })
-        .on('data', item => data[item.key] = item.value)
-        .on('end', () => resolve(data))
-        .on('error', err => reject(err))
-    })
-  }
 }
 
 /**
