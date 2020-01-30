@@ -21,6 +21,17 @@ describe('AttestationChallengeBuilder', () => {
       assert.deepEqual([credential], attestation.excludeCredentials)
     })
 
+    it('defaults to public keys with no transports', () => {
+      let credential = { id: 'id' }
+      let attestation = new AttestationChallengeBuilder(service)
+          .setUserInfo({id: 'nina'})
+          .setRelyingPartyInfo({id: 'rp.com'})
+          .addCredentialExclusion(credential)
+          .build()
+      assert.deepEqual([{ id: 'id', type: 'public-key', transports: [] }],
+                       attestation.excludeCredentials)
+    })
+
     it('adds an array of credentials to the exclusion list', () => {
       let credential1 = { id: 'id1', type: 'public-key', transports: ['usb'] }
       let credential2 = { id: 'id2', type: 'public-key', transports: ['nfc'] }

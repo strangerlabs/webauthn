@@ -98,9 +98,9 @@ class AttestationChallengeBuilder {
     let { excludeCredentials = [] } = this.result
 
     credentials.map(credential => ({
-      type: credential.type,
+      type: credential.type || 'public-key',
       id: credential.id,
-      transports: credential.transports = [],
+      transports: credential.transports || [],
     })).forEach(excluded => {
       if (
         !excluded.type
