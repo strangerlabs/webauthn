@@ -6,7 +6,6 @@
  */
 const crypto = require('crypto')
 const base64url = require('base64url')
-const _ = require('lodash')
 
 /**
  * Module Dependencies
@@ -24,13 +23,8 @@ class AttestationChallengeBuilder {
     Object.defineProperty(this, 'result', { value: {} })
   }
 
-  setRelyingPartyInfo (options = {}) {
-    this.result.rp = _.pick(options, [
-      'id',
-      'name',
-      'icon',
-    ])
-
+  setRelyingPartyInfo ({id, name, icon} = {}) {
+    this.result.rp = { id, name, icon }
     return this
   }
 
@@ -46,11 +40,8 @@ class AttestationChallengeBuilder {
       throw new Error(`${usernameField} required`)
     }
 
-    this.result.user = _.pick(options, [
-      'id',
-      'displayName',
-      'icon',
-    ])
+    const { displayName, icon } = options
+    this.result.user = { id, displayName, icon }
 
     this.result.user.name = name
 
