@@ -404,7 +404,7 @@ class Webauthn {
         // A UTF8String of the vendor’s choosing
         pem.subject.commonName &&
         // The Basic Constraints extension MUST have the CA component set to false
-        !pem.extensions.isCA &&
+        !pem.isCA &&
         // If attestnCert contains an extension with OID 1.3.6.1.4.1.45724.1.1.4 (id-fido-gen-ce-aaguid)
         // verify that the value of this extension matches the aaguid in authenticatorData.
         // The extension MUST NOT be marked as critical.
@@ -577,7 +577,7 @@ class Webauthn {
     let type
     if (pkBuffer.length == 65 && pkBuffer[0] == 0x04) {
       pkBuffer = Buffer.concat([
-        new Buffer.from("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex"),
+        Buffer.from("3059301306072a8648ce3d020106082a8648ce3d030107034200", "hex"),
         pkBuffer
       ])
 
