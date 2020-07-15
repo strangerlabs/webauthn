@@ -41,9 +41,9 @@
   ],
   "license": "MIT",
   "bugs": {
-    "url": "https://gitlab.com/strangerlabs/webauthn/issues"
+    "url": "https://github.com/strangerlabs/webauthn/issues"
   },
-  "homepage": "https://gitlab.com/strangerlabs/webauthn",
+  "homepage": "https://github.com/strangerlabs/webauthn",
   "dependencies": {
     "@fidm/x509": "^1.2.1",
     "base64url": "^3.0.1",
