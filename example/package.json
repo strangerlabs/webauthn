@@ -11,7 +11,7 @@
     "react": "^16.8.6",
     "react-bootstrap": "^1.0.0-beta.8",
     "react-dom": "^16.8.6",
-    "react-scripts": "3.0.0",
+    "react-scripts": "5.0.1",
     "webauthn": "file:.."
   },
   "scripts": {
