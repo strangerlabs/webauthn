@@ -54,7 +54,7 @@
     "lodash": "^4.17.14"
   },
   "devDependencies": {
-    "mocha": "^7.0.0",
+    "mocha": "^10.2.0",
     "nyc": "^15.0.0",
     "sinon": "^8.0.4"
   }
